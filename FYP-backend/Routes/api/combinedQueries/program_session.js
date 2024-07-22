@@ -10,7 +10,6 @@ async function query(text, params) {
   return res;
 }
 
-// Function to create program and session in a transaction
 async function createProgramAndSession(program, session) {
   const client = await pool.connect();
   try {
@@ -34,7 +33,6 @@ async function createProgramAndSession(program, session) {
   }
 }
 
-// Express route handler
 router.post("/", async (req, res) => {
   const { program, session } = req.body;
   try {

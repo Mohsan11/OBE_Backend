@@ -12,10 +12,9 @@ async function query(text, params) {
 
 // CRUD functions for semesters table
 async function createSemester(semester) {
-  const { name, number, term, session_id } = semester;
-  const queryText =
-    'INSERT INTO semesters (name, number, term, session_id) VALUES ($1, $2, $3, $4) RETURNING *';
-  const values = [name, number, term, session_id];
+  const { name, number, session_id } = semester;
+  const queryText = 'INSERT INTO semesters (name, number, session_id) VALUES ($1, $2, $3) RETURNING *';
+  const values = [name, number, session_id];
   return query(queryText, values);
 }
 
@@ -25,10 +24,9 @@ async function getSemester(semesterId) {
 }
 
 async function updateSemester(semesterId, updates) {
-  const { name, number, term, session_id } = updates;
-  const queryText =
-    'UPDATE semesters SET name = $1, number = $2, term = $3, session_id = $4 WHERE id = $5 RETURNING *';
-  const values = [name, number, term, session_id, semesterId];
+  const { name, number, session_id } = updates;
+  const queryText = 'UPDATE semesters SET name = $1, number = $2, session_id = $3 WHERE id = $4 RETURNING *';
+  const values = [name, number, session_id, semesterId];
   return query(queryText, values);
 }
 
@@ -94,14 +92,6 @@ router.delete("/:id", async (req, res) => {
   }
 });
 
-router.get('/api/semesters/all', async (req, res) => {
-  try {
-    const result = await pool.query('SELECT * FROM semesters');
-    res.json(result.rows);
-  } catch (err) {
-    console.error(err.message);
-    res.status(500).send('Server Error');
-  }
-});
+
 
 module.exports = router;

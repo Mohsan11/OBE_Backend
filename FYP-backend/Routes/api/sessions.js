@@ -2,7 +2,6 @@ const express = require("express");
 const { pool } = require("../../db"); // Adjust the path as necessary
 const router = express.Router();
 
-// Helper function to execute SQL queries
 async function query(text, params) {
   const start = Date.now();
   const res = await pool.query(text, params);
@@ -13,10 +12,9 @@ async function query(text, params) {
 
 // CRUD functions for sessions table
 async function createSession(session) {
-  const { start_year, end_year } = session;
-  const queryText =
-    'INSERT INTO sessions (start_year, end_year) VALUES ($1, $2) RETURNING *';
-  const values = [start_year, end_year];
+  const { start_year, end_year, program_id } = session;
+  const queryText = 'INSERT INTO sessions (start_year, end_year, program_id) VALUES ($1, $2, $3) RETURNING *';
+  const values = [start_year, end_year, program_id];
   return query(queryText, values);
 }
 
@@ -26,10 +24,9 @@ async function getSession(sessionId) {
 }
 
 async function updateSession(sessionId, updates) {
-  const { start_year, end_year } = updates;
-  const queryText =
-    'UPDATE sessions SET start_year = $1, end_year = $2 WHERE id = $3 RETURNING *';
-  const values = [start_year, end_year, sessionId];
+  const { start_year, end_year, program_id } = updates;
+  const queryText = 'UPDATE sessions SET start_year = $1, end_year = $2, program_id = $3 WHERE id = $4 RETURNING *';
+  const values = [start_year, end_year, program_id, sessionId];
   return query(queryText, values);
 }
 

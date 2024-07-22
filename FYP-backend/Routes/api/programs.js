@@ -12,10 +12,9 @@ async function query(text, params) {
 
 // CRUD functions for programs table
 async function createProgram(program) {
-  const { name, code } = program;
-  const queryText =
-    'INSERT INTO programs (name, code) VALUES ($1, $2) RETURNING *';
-  const values = [name, code];
+  const { name } = program;
+  const queryText = 'INSERT INTO programs (name) VALUES ($1) RETURNING *';
+  const values = [name];
   return query(queryText, values);
 }
 
@@ -25,10 +24,9 @@ async function getProgram(programId) {
 }
 
 async function updateProgram(programId, updates) {
-  const { name, code } = updates;
-  const queryText =
-    'UPDATE programs SET name = $1, code = $2 WHERE id = $3 RETURNING *';
-  const values = [name, code, programId];
+  const { name } = updates;
+  const queryText = 'UPDATE programs SET name = $1 WHERE id = $2 RETURNING *';
+  const values = [name, programId];
   return query(queryText, values);
 }
 
@@ -38,22 +36,21 @@ async function deleteProgram(programId) {
 }
 
 async function getAllPrograms() {
-    const queryText = 'SELECT * FROM programs';
-    return query(queryText, []);
-  }
-    
-  // Express route handlers
-  
-  router.get("/all", async (req, res) => {
-    try {
-      const result = await getAllPrograms();
-      res.status(200).json(result.rows);
-    } catch (err) {
-      res.status(500).json({ error: err.message });
-    }
-  });
+  const queryText = 'SELECT * FROM programs';
+  return query(queryText, []);
+}
 
-  router.post("/", async (req, res) => {
+// Express route handlers
+router.get("/all", async (req, res) => {
+  try {
+    const result = await getAllPrograms();
+    res.status(200).json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.post("/", async (req, res) => {
   try {
     const result = await createProgram(req.body);
     res.status(201).json(result.rows[0]);

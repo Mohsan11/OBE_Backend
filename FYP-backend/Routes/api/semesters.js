@@ -92,6 +92,33 @@ router.delete("/:id", async (req, res) => {
   }
 });
 
+router.get('/session/:sessionId', async (req, res) => {
+  try {
+    const { sessionId } = req.params;
+    const result = await query(`
+      SELECT * FROM semesters WHERE session_id = $1
+    `, [sessionId]);
+    res.status(200).json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+async function getAllSemesters() {
+  const queryText = 'SELECT * FROM semesters';
+  return query(queryText, []);
+}
+
+// Routes
+router.get('/all', async (req, res) => {
+  try {
+    const result = await getAllSemesters();
+    res.status(200).json(result.rows);
+  } catch (err) {
+    console.error("Error fetching semesters:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 
 
 module.exports = router;

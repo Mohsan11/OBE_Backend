@@ -92,4 +92,15 @@ router.delete("/:id", async (req, res) => {
   }
 });
 
+router.get("/program/:programId", async (req, res) => {
+  try {
+    const programId = parseInt(req.params.programId);
+    const result = await query('SELECT * FROM sessions WHERE program_id = $1', [programId]);
+    res.status(200).json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
 module.exports = router;

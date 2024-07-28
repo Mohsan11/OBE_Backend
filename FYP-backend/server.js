@@ -19,11 +19,16 @@ app.use("/api/semester", require("./Routes/api/semesters"));
 app.use("/api/plo", require("./Routes/api/plo"));
 app.use("/api/clo", require("./Routes/api/clos"));
 app.use("/api/sos", require("./Routes/api/SOS"));
+app.use("/api/questions", require("./Routes/api/questions"));
+app.use("/api/assessments", require("./Routes/api/assesment"));
+app.use("/api/marks", require("./Routes/api/marks"));
 app.use("/api/viewsos", require("./Routes/api/combinedQueries/viewSOS"));
 app.use("/api/programs_sessions", require("./Routes/api/combinedQueries/program_session"));
 app.use("/api/programs_sessions_semester", require("./Routes/api/combinedQueries/program_session_Semester"));
 app.use("/api/clo_plo_mapping", require("./Routes/api/clo_plo_mapping"));
 app.use("/api/teacherCourseAssignment", require("./Routes/api/teacher_coursesAssignments"));
+app.use("/api/teacherDashboard", require("./Routes/api/combinedQueries/teacherDashboard"));
+app.use("/api/studentenrollments", require("./Routes/api/studentenrollments"));
 
 app.listen(PORT, () => {
   console.log("Server is running on Port:", PORT);

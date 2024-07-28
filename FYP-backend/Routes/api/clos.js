@@ -95,5 +95,28 @@ router.get("/all", async (req, res) => {
     }
   });
   
+  async function getClosByCourseId(courseId) {
+    const queryText = `
+      SELECT id, description, course_id, session_id, clo_name
+      FROM clos
+      WHERE course_id = $1
+    `;
+    const values = [courseId];
+    return query(queryText, values);
+  }
+  
+  // Route handler for fetching CLOs by course ID
+  router.get('/course/:courseId', async (req, res) => {
+    try {
+      const courseId = req.params.courseId;
+      const result = await getClosByCourseId(courseId);
+      res.status(200).json(result.rows);
+    } catch (error) {
+      console.error('Error fetching CLOs:', error);
+      res.status(500).json({ message: 'Error fetching CLOs' });
+    }
+  });
+  
+  
   module.exports = router;
   

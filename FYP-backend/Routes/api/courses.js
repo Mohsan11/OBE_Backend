@@ -10,21 +10,19 @@ async function query(text, params) {
   return res;
 }
 
-
-// CRUD functions for courses table
 async function getAllCourses() {
-    const queryText = 'SELECT * FROM courses';
-    return query(queryText, []);
-  }
-  
+  const queryText = 'SELECT * FROM courses';
+  return query(queryText, []);
+}
 
 async function createCourse(course) {
-  const { name, code, program_id } = course;
+  const { name, code, program_id, semester_id } = course;
   const queryText =
-    'INSERT INTO courses (name, code, program_id) VALUES ($1, $2, $3) RETURNING *';
-  const values = [name, code, program_id];
+    'INSERT INTO courses (name, code, program_id, semester_id) VALUES ($1, $2, $3, $4) RETURNING *';
+  const values = [name, code, program_id, semester_id];
   return query(queryText, values);
 }
+
 
 async function getCourse(courseId) {
   const queryText = 'SELECT * FROM courses WHERE id = $1';
@@ -50,7 +48,53 @@ async function getTotalCourses() {
   return result.rows[0].count;
 }
 
+async function getCoursesByProgramAndSemester(programId, semesterId) {
+  const queryText = `
+    SELECT DISTINCT c.* 
+    FROM courses c
+    JOIN programs p ON c.program_id = p.id
+    JOIN sessions s ON p.id = s.program_id
+    JOIN semesters sem ON s.id = sem.session_id
+    WHERE p.id = $1 AND sem.id = $2;
+  `;
+  return query(queryText, [programId, semesterId]);
+}
+
+async function getAllCoursesDetailed() {
+  const queryText = `
+    SELECT 
+      c.id, 
+      c.name AS course_name, 
+      c.code AS course_code, 
+      p.name AS program_name, 
+      s.start_year || ' - ' || s.end_year AS session, 
+      sem.name AS semester_name, 
+      sem.number AS semester_number
+    FROM courses c
+    JOIN programs p ON c.program_id = p.id
+    JOIN semesters sem ON c.semester_id = sem.id
+    JOIN sessions s ON sem.session_id = s.id
+  `;
+  return query(queryText, []);
+}
+async function getCoursesBySemester(semesterId) {
+  const queryText = 'SELECT * FROM courses WHERE semester_id = $1';
+  return query(queryText, [semesterId]);
+}
+
 // Express route handlers
+
+// Route to get detailed course information
+router.get("/allDetail", async (req, res) => {
+  try {
+    const result = await getAllCoursesDetailed();
+    res.status(200).json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Other CRUD routes
 router.post("/", async (req, res) => {
   try {
     const result = await createCourse(req.body);
@@ -59,14 +103,16 @@ router.post("/", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
- router.get("/all", async (req, res) => {
-    try {
-      const result = await getAllCourses();
-      res.status(200).json(result.rows);
-    } catch (err) {
-      res.status(500).json({ error: err.message });
-    }
-  });
+
+router.get("/all", async (req, res) => {
+  try {
+    const result = await getAllCourses();
+    res.status(200).json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 router.get("/:id", async (req, res) => {
   try {
     const result = await getCourse(req.params.id);
@@ -96,9 +142,14 @@ router.delete("/:id", async (req, res) => {
     await deleteCourse(req.params.id);
     res.status(204).end();
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    if (err.code === '23503') { 
+      res.status(400).json({ error: "Cannot delete course. It is referenced by other records." });
+    } else {
+      res.status(500).json({ error: err.message });
+    }
   }
 });
+
 
 router.get("/totalCourses", async (req, res) => {
   try {
@@ -108,4 +159,51 @@ router.get("/totalCourses", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
+router.get("/program/:programId", async (req, res) => {
+  try {
+    const programId = parseInt(req.params.programId);
+    const result = await query('SELECT * FROM courses WHERE program_id = $1', [programId]);
+    res.status(200).json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.get("/program/:programId/session/:sessionId", async (req, res) => {
+  try {
+    const { programId, sessionId } = req.params;
+    const result = await query(`
+      SELECT c.*, s.id AS semester_id, s.name AS semester_name, s.number AS semester_number
+      FROM courses c
+      JOIN semesters s ON c.program_id = $1 AND s.session_id = $2
+      WHERE c.program_id = $1
+    `, [programId, sessionId]);
+    res.status(200).json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.get("/program/:programId/semester/:semesterId", async (req, res) => {
+  try {
+    const { programId, semesterId } = req.params;
+    const result = await getCoursesByProgramAndSemester(programId, semesterId);
+    res.status(200).json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.get("/semester/:semesterId", async (req, res) => {
+  try {
+    const { semesterId } = req.params;
+    const result = await getCoursesBySemester(semesterId);
+    res.status(200).json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
 module.exports = router;

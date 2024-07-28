@@ -42,7 +42,40 @@ async function getAllTeacherCourseAssignments() {
   return query(queryText, []);
 }
 
-// Routes
+// Fetch courses assigned to a specific teacher
+// async function getCoursesByTeacherId(teacherId) {
+//   const queryText = `
+//     SELECT 
+//       tc.course_id AS id, 
+//       c.name AS course_name, 
+//       p.name AS program_name, 
+//       s.start_year || '-' || s.end_year AS session, 
+//       sem.name AS semester_name
+//     FROM 
+//       teachercourseassignments tc
+//       JOIN courses c ON tc.course_id = c.id
+//       JOIN programs p ON c.program_id = p.id
+//       JOIN semesters sem ON tc.semester_id = sem.id
+//       JOIN sessions s ON sem.session_id = s.id
+//     WHERE 
+//       tc.teacher_id = $1
+//   `;
+//   return query(queryText, [teacherId]);
+// }
+
+// // Routes
+// router.get('/teacher/:teacherId', async (req, res) => {
+//   const { teacherId } = req.params;
+//   try {
+//     const result = await getCoursesByTeacherId(teacherId);
+//     res.status(200).json(result.rows);
+//   } catch (err) {
+//     console.error("Error fetching courses:", err);
+//     res.status(500).json({ error: err.message });
+//   }
+// });
+
+
 router.get('/all', async (req, res) => {
   try {
     const result = await getAllTeacherCourseAssignments();
@@ -98,5 +131,47 @@ router.delete("/:id", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
+async function query(text, params) {
+  const start = Date.now();
+  const res = await pool.query(text, params);
+  const duration = Date.now() - start;
+  console.log("Executed query:", { text, duration, rows: res.rowCount });
+  return res;
+}
+
+async function getCoursesByTeacherId(teacherId) {
+  const queryText = `
+    SELECT 
+      tc.course_id AS id, 
+      c.name AS course_name, 
+      p.name AS program_name, 
+      s.start_year || '-' || s.end_year AS session, 
+      sem.name AS semester_name,
+      sem.id AS semester_id
+    FROM 
+      teachercourseassignments tc
+      JOIN courses c ON tc.course_id = c.id
+      JOIN programs p ON c.program_id = p.id
+      JOIN semesters sem ON tc.semester_id = sem.id
+      JOIN sessions s ON sem.session_id = s.id
+    WHERE 
+      tc.teacher_id = $1
+  `;
+  return query(queryText, [teacherId]);
+}
+
+// Routes
+router.get('/teacher/:teacherId', async (req, res) => {
+  const { teacherId } = req.params;
+  try {
+    const result = await getCoursesByTeacherId(teacherId);
+    res.status(200).json(result.rows);
+  } catch (err) {
+    console.error("Error fetching courses:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 
 module.exports = router;

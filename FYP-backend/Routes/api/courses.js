@@ -16,12 +16,16 @@ async function getAllCourses() {
 }
 
 async function createCourse(course) {
-  const { name, code, program_id, semester_id } = course;
-  const queryText =
-    'INSERT INTO courses (name, code, program_id, semester_id) VALUES ($1, $2, $3, $4) RETURNING *';
-  const values = [name, code, program_id, semester_id];
+  const { name, code, program_id, semester_id, theory_credit_hours, lab_credit_hours } = course;
+  const queryText = `
+    INSERT INTO courses (name, code, program_id, semester_id, theory_credit_hours, lab_credit_hours)
+    VALUES ($1, $2, $3, $4, $5, $6)
+    RETURNING *
+  `;
+  const values = [name, code, program_id, semester_id, theory_credit_hours, lab_credit_hours];
   return query(queryText, values);
 }
+
 
 
 async function getCourse(courseId) {
@@ -30,12 +34,17 @@ async function getCourse(courseId) {
 }
 
 async function updateCourse(courseId, updates) {
-  const { name, code, program_id } = updates;
-  const queryText =
-    'UPDATE courses SET name = $1, code = $2, program_id = $3 WHERE id = $4 RETURNING *';
-  const values = [name, code, program_id, courseId];
+  const { name, code, program_id, semester_id, theory_credit_hours, lab_credit_hours } = updates;
+  const queryText = `
+    UPDATE courses 
+    SET name = $1, code = $2, program_id = $3, semester_id = $4, theory_credit_hours = $5, lab_credit_hours = $6
+    WHERE id = $7
+    RETURNING *
+  `;
+  const values = [name, code, program_id, semester_id, theory_credit_hours, lab_credit_hours, courseId];
   return query(queryText, values);
 }
+
 
 async function deleteCourse(courseId) {
   const queryText = 'DELETE FROM courses WHERE id = $1';
@@ -50,7 +59,7 @@ async function getTotalCourses() {
 
 async function getCoursesByProgramAndSemester(programId, semesterId) {
   const queryText = `
-    SELECT DISTINCT c.* 
+    SELECT DISTINCT c.*, c.theory_credit_hours, c.lab_credit_hours
     FROM courses c
     JOIN programs p ON c.program_id = p.id
     JOIN sessions s ON p.id = s.program_id
@@ -60,12 +69,15 @@ async function getCoursesByProgramAndSemester(programId, semesterId) {
   return query(queryText, [programId, semesterId]);
 }
 
+
 async function getAllCoursesDetailed() {
   const queryText = `
     SELECT 
       c.id, 
       c.name AS course_name, 
       c.code AS course_code, 
+      c.theory_credit_hours, 
+      c.lab_credit_hours, 
       p.name AS program_name, 
       s.start_year || ' - ' || s.end_year AS session, 
       sem.name AS semester_name, 
@@ -77,6 +89,7 @@ async function getAllCoursesDetailed() {
   `;
   return query(queryText, []);
 }
+
 async function getCoursesBySemester(semesterId) {
   const queryText = 'SELECT * FROM courses WHERE semester_id = $1';
   return query(queryText, [semesterId]);

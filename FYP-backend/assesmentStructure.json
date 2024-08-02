@@ -1,0 +1,35 @@
+{
+    "theory_only": {
+      "quiz": 15,
+      "assignment": 15,
+      "midterm": 45,
+      "terminal": 75
+    },
+    "theory_with_lab": {
+      "theory": {
+        "quiz": 15,
+        "assignment": 15,
+        "midterm": 45,
+        "terminal": 75
+      },
+      "lab": {
+        "assignment": 12.5,
+        "midterm": 12.5,
+        "terminal": 25
+      }
+    },
+    "theory_with_lab_different_hours": {
+      "theory": {
+        "quiz": 15,
+        "assignment": 15,
+        "midterm": 35,
+        "terminal": 60
+      },
+      "lab": {
+        "assignment": 10,
+        "midterm": 15,
+        "terminal": 35
+      }
+    }
+  }
+  

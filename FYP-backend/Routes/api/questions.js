@@ -15,7 +15,7 @@ async function query(text, params) {
 async function createQuestion(question) {
   const text = `INSERT INTO questions (question_text, assessment_id, clo_id, marks)
                 VALUES ($1, $2, $3, $4) RETURNING *`;
-  const values = [question.question_text, question.assessment_id, question.clo_id, question.marks];
+  const values = [question.question_text, question.assessment_id, question.clo_id || null, question.marks];
   const res = await query(text, values);
   return res.rows[0];
 }

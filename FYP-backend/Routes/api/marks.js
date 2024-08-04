@@ -1,5 +1,5 @@
 const express = require('express');
-const { pool } = require('../../db');
+const { pool } = require('../../db'); // Adjust the path according to your project structure
 const router = express.Router();
 
 // Function to execute SQL queries
@@ -11,104 +11,122 @@ async function query(text, params) {
   return res;
 }
 
-// CRUD functions for the marks table
-
 // Create a new mark record
 async function createMark(mark) {
-  const { student_id, question_id, total_marks, obtained_marks } = mark;
+  const { student_id, question_id, assessment_id, total_marks, obtained_marks } = mark;
+
+  // Check if the mark already exists
+  const checkQuery = 'SELECT * FROM marks WHERE student_id = $1 AND question_id = $2';
+  const checkResult = await query(checkQuery, [student_id, question_id]);
+  if (checkResult.rows.length > 0) {
+    throw new Error('Mark already exists for this student and question');
+  }
+
   const queryText = `
-    INSERT INTO marks (student_id, question_id, total_marks, obtained_marks)
-    VALUES ($1, $2, $3, $4)
-    RETURNING *`;
-  const values = [student_id, question_id, total_marks, obtained_marks];
-  return query(queryText, values);
+    INSERT INTO marks (student_id, question_id, assessment_id, total_marks, obtained_marks)
+    VALUES ($1, $2, $3, $4, $5)
+    RETURNING *
+  `;
+  const values = [student_id, question_id, assessment_id, total_marks, obtained_marks];
+  const result = await query(queryText, values);
+  return result.rows[0];
 }
 
-// Get all marks
+// Retrieve all marks
 async function getAllMarks() {
   const queryText = 'SELECT * FROM marks';
-  return query(queryText);
+  const result = await query(queryText);
+  return result.rows;
 }
 
-// Get a mark by its ID
-async function getMarkById(id) {
-  const queryText = 'SELECT * FROM marks WHERE id = $1';
-  return query(queryText, [id]);
+// Retrieve marks by student ID and/or question ID
+async function getMarks(studentId, questionId) {
+  const queryText = 'SELECT * FROM marks WHERE student_id = $1 AND question_id = $2';
+  const result = await query(queryText, [studentId, questionId]);
+  return result.rows;
 }
 
-// Update a mark record
+// Update an existing mark
 async function updateMark(id, mark) {
-  const { student_id, question_id, total_marks, obtained_marks } = mark;
+  const { total_marks, obtained_marks } = mark;
   const queryText = `
     UPDATE marks
-    SET student_id = $1, question_id = $2, total_marks = $3, obtained_marks = $4
-    WHERE id = $5
-    RETURNING *`;
-  const values = [student_id, question_id, total_marks, obtained_marks, id];
-  return query(queryText, values);
+    SET total_marks = $1, obtained_marks = $2
+    WHERE id = $3
+    RETURNING *
+  `;
+  const values = [total_marks, obtained_marks, id];
+  const result = await query(queryText, values);
+  return result.rows[0];
 }
 
 // Delete a mark record
 async function deleteMark(id) {
-  const queryText = 'DELETE FROM marks WHERE id = $1';
-  return query(queryText, [id]);
+  const queryText = 'DELETE FROM marks WHERE id = $1 RETURNING *';
+  const result = await query(queryText, [id]);
+  return result.rows[0];
 }
 
-// Express route handlers
-
-// Create a new mark
+// API route to create a new mark
 router.post('/', async (req, res) => {
   try {
-    const result = await createMark(req.body);
-    res.status(201).json(result.rows[0]);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
+    const mark = req.body;
+    if (!mark.student_id || !mark.question_id || !mark.assessment_id || !mark.total_marks || !mark.obtained_marks) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+    const newMark = await createMark(mark);
+    res.status(201).json(newMark);
+  } catch (error) {
+    console.error('Error creating mark:', error);
+    res.status(500).json({ error: error.message });
   }
 });
 
-// Get all marks
+// API route to get all marks
 router.get('/', async (req, res) => {
   try {
-    const result = await getAllMarks();
-    res.status(200).json(result.rows);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
+    const marks = await getAllMarks();
+    res.status(200).json(marks);
+  } catch (error) {
+    console.error('Error retrieving marks:', error);
+    res.status(500).json({ error: error.message });
   }
 });
 
-// Get a mark by ID
-router.get('/:id', async (req, res) => {
+// API route to get marks by student ID and/or question ID
+router.get('/student/:studentId/question/:questionId', async (req, res) => {
   try {
-    const result = await getMarkById(req.params.id);
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Mark not found' });
-    }
-    res.status(200).json(result.rows[0]);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
+    const { studentId, questionId } = req.params;
+    const marks = await getMarks(studentId, questionId);
+    res.status(200).json(marks);
+  } catch (error) {
+    console.error('Error retrieving marks:', error);
+    res.status(500).json({ error: error.message });
   }
 });
 
-// Update a mark record
+// API route to update a mark
 router.put('/:id', async (req, res) => {
   try {
-    const result = await updateMark(req.params.id, req.body);
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Mark not found' });
-    }
-    res.status(200).json(result.rows[0]);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
+    const id = req.params.id;
+    const mark = req.body;
+    const updatedMark = await updateMark(id, mark);
+    res.status(200).json(updatedMark);
+  } catch (error) {
+    console.error('Error updating mark:', error);
+    res.status(500).json({ error: error.message });
   }
 });
 
-// Delete a mark record
+// API route to delete a mark
 router.delete('/:id', async (req, res) => {
   try {
-    await deleteMark(req.params.id);
-    res.status(204).end();
-  } catch (err) {
-    res.status(500).json({ error: err.message });
+    const id = req.params.id;
+    const deletedMark = await deleteMark(id);
+    res.status(200).json(deletedMark);
+  } catch (error) {
+    console.error('Error deleting mark:', error);
+    res.status(500).json({ error: error.message });
   }
 });
 

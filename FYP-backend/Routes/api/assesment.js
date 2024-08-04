@@ -91,9 +91,38 @@ const calculateNormalizedMarks = (theoryCreditHours, labCreditHours, assessmentT
   return { normalizedMarks, totalMarks };
 };
 
+
+async function updateMarksAndResults(assessmentId, newNormalizedMarks) {
+  // Fetch all marks for the assessment
+  const marksResult = await query('SELECT * FROM marks WHERE assessment_id = $1', [assessmentId]);
+
+  if (marksResult.rows.length === 0) {
+    console.log(`No marks found for assessment ID ${assessmentId}`);
+    return;
+  }
+
+  // Sum obtained marks and total marks from marks table
+  const { sumObtainedMarks, sumTotalMarks } = marksResult.rows.reduce(
+    (acc, mark) => {
+      acc.sumObtainedMarks += mark.obtained_marks;
+      acc.sumTotalMarks += mark.total_marks;
+      return acc;
+    },
+    { sumObtainedMarks: 0, sumTotalMarks: 0 }
+  );
+
+  // Calculate new normalized obtained marks
+  const normalizedObtainedMarks = (sumObtainedMarks / sumTotalMarks) * newNormalizedMarks;
+
+  // Update result table with new normalized obtained marks and total marks
+  await query('UPDATE result SET final_total_marks = $1, final_obtained_marks = $2 WHERE assessment_id = $3', [newNormalizedMarks, normalizedObtainedMarks, assessmentId]);
+
+  console.log(`Results updated for assessment ID ${assessmentId}`);
+}
+
 async function createAssessment(assessment) {
   const { assessment_name, assessment_type, course_id, semester_id } = assessment;
-  
+
   const courseResult = await query('SELECT * FROM courses WHERE id = $1', [course_id]);
   if (courseResult.rows.length === 0) {
     throw new Error('Course not found');
@@ -112,6 +141,7 @@ async function createAssessment(assessment) {
   await Promise.all(
     assessmentsResult.rows.map(async (existingAssessment) => {
       await query('UPDATE assessments SET normalized_total_marks = $1 WHERE id = $2', [adjustedNormalizedMarks, existingAssessment.id]);
+      await updateMarksAndResults(existingAssessment.id, adjustedNormalizedMarks);
     })
   );
 
@@ -153,6 +183,7 @@ async function deleteAssessment(assessmentId) {
     await Promise.all(
       remainingAssessmentsResult.rows.map(async (remainingAssessment) => {
         await query('UPDATE assessments SET normalized_total_marks = $1 WHERE id = $2', [adjustedNormalizedMarks, remainingAssessment.id]);
+        await updateMarksAndResults(remainingAssessment.id, adjustedNormalizedMarks);
       })
     );
   }
@@ -166,7 +197,6 @@ async function deleteAssessment(assessmentId) {
   const deleteQueryText = 'DELETE FROM assessments WHERE id = $1';
   return query(deleteQueryText, [assessmentId]);
 }
-
 
 async function getAssessment(assessmentId) {
   const queryText = 'SELECT * FROM assessments WHERE id = $1';
@@ -219,9 +249,6 @@ router.get("/:id", async (req, res) => {
 router.put("/:id", async (req, res) => {
   try {
     const result = await updateAssessment(req.params.id, req.body);
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: "Assessment not found" });
-    }
     res.status(200).json(result.rows[0]);
   } catch (err) {
     res.status(500).json({ error: err.message });

@@ -92,4 +92,15 @@ router.delete("/:id", async (req, res) => {
   }
 });
 
+router.get('program/:programId', async (req, res) => {
+  const { programId } = req.params;
+  try {
+    const result = await query('SELECT * FROM programs WHERE id = $1', [programId]);
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
 module.exports = router;

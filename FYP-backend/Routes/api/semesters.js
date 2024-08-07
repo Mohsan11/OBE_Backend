@@ -118,7 +118,16 @@ router.get('/all', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
-
+router.get('/:session_id', async (req, res) => {
+  const { session_id } = req.query;
+  try {
+    const result = await query('SELECT * FROM semesters WHERE session_id = $1', [session_id]);
+    res.json(result.rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
 
 
 module.exports = router;

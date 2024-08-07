@@ -27,7 +27,6 @@ async function createCourse(course) {
 }
 
 
-
 async function getCourse(courseId) {
   const queryText = 'SELECT * FROM courses WHERE id = $1';
   return query(queryText, [courseId]);

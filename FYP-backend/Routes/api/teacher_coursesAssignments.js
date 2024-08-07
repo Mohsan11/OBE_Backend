@@ -22,6 +22,10 @@ async function getTeacherCourseAssignment(id) {
   const queryText = 'SELECT * FROM teachercourseassignments WHERE id = $1';
   return query(queryText, [id]);
 }
+async function getTeacherCourseAssignmentByCourse(id) {
+  const queryText = 'SELECT * FROM teachercourseassignments WHERE course_id = $1';
+  return query(queryText, [id]);
+}
 
 async function updateTeacherCourseAssignment(id, updates) {
   const { teacher_id, course_id, semester_id } = updates;
@@ -166,6 +170,18 @@ router.get('/teacher/:teacherId', async (req, res) => {
   const { teacherId } = req.params;
   try {
     const result = await getCoursesByTeacherId(teacherId);
+    res.status(200).json(result.rows);
+  } catch (err) {
+    console.error("Error fetching courses:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
+router.get('/course/:courseId', async (req, res) => {
+  const { courseId } = req.params;
+  try {
+    const result = await getTeacherCourseAssignmentByCourse(courseId);
     res.status(200).json(result.rows);
   } catch (err) {
     console.error("Error fetching courses:", err);

@@ -13,12 +13,13 @@ async function query(text, params) {
 // Helper function to calculate CLO progress
 const calculateCLOProgress = async (courseId, studentId) => {
   try {
-    // Get all CLOs for the course
+    // Get all CLOs for the course, filtering out rows where clo_id is NULL
     const { rows: cloTotals } = await query(`
       SELECT q.clo_id, SUM(q.marks) AS total_marks
       FROM questions q
       JOIN assessments a ON q.assessment_id = a.id
       WHERE a.course_id = $1
+      AND q.clo_id IS NOT NULL
       GROUP BY q.clo_id
     `, [courseId]);
 
@@ -26,7 +27,7 @@ const calculateCLOProgress = async (courseId, studentId) => {
       return { message: "No CLOs found for this course." };
     }
 
-    // Get all student marks
+    // Get all student marks, filtering out rows where clo_id is NULL
     const { rows: studentMarks } = await query(`
       SELECT q.clo_id, SUM(m.obtained_marks) AS obtained_marks
       FROM marks m
@@ -34,6 +35,7 @@ const calculateCLOProgress = async (courseId, studentId) => {
       JOIN assessments a ON q.assessment_id = a.id
       WHERE m.student_id = $1
       AND a.course_id = $2
+      AND q.clo_id IS NOT NULL
       GROUP BY q.clo_id
     `, [studentId, courseId]);
 

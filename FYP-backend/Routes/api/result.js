@@ -13,16 +13,16 @@ async function query(text, params) {
 
 // Create a new result record
 const createResult = async (req, res) => {
-  const { final_total_marks, final_obtained_marks, assessment_id } = req.body;
+  const { final_total_marks, final_obtained_marks, assessment_id, student_id, assessment_name, assessment_type } = req.body;
 
-  if (!final_total_marks || !final_obtained_marks || !assessment_id) {
+  if (!final_total_marks || !final_obtained_marks || !assessment_id || !student_id, !assessment_name, !assessment_type) {
     return res.status(400).json({ error: 'Missing required fields' });
   }
 
   try {
-    const insertQuery = `INSERT INTO public.result (final_total_marks, final_obtained_marks, assessment_id)
-      VALUES ($1, $2, $3)`;
-    await pool.query(insertQuery, [final_total_marks, final_obtained_marks, assessment_id]);
+    const insertQuery = `INSERT INTO public.result (final_total_marks, final_obtained_marks, assessment_id, student_id, assessment_name, assessment_type)
+      VALUES ($1, $2, $3 , $4, $5, $6)`;
+    await pool.query(insertQuery, [final_total_marks, final_obtained_marks, assessment_id, student_id, assessment_name, assessment_type ]);
     res.status(201).json({ message: 'Result created successfully' });
   } catch (error) {
     console.error('Error inserting result:', error);
@@ -45,6 +45,11 @@ async function getResultByMarksId(marksId) {
   const result = await query(queryText, [marksId]);
   return result.rows;
 }
+async function getResultBystudentId(studentId) {
+  const queryText = 'SELECT * FROM result WHERE studnt_id = $1';
+  const result = await query(queryText, [studentId]);
+  return result.rows;
+}
 
 // Update an existing result
 async function updateResult(id, resultData) {
@@ -64,6 +69,28 @@ async function deleteResult(id) {
   const result = await query(queryText, [id]);
   return result.rows[0];
 }
+
+const getResultByCourseAndStudent = async (courseId, studentId) => {
+  const queryText = `
+    SELECT
+      r.assessment_id,
+      r.assessment_name,
+      r.assessment_type,
+      r.final_total_marks,
+      r.final_obtained_marks
+    FROM
+      public.result r
+    WHERE
+      r.assessment_id IN (
+        SELECT a.id
+        FROM public.assessments a
+        WHERE a.course_id = $1
+      )
+      AND r.student_id = $2
+  `;
+  return pool.query(queryText, [courseId, studentId]);
+};
+
 
 // API route to create a new result
 router.post('/', async (req, res) => {
@@ -95,6 +122,18 @@ router.get('/marks/:marksId', async (req, res) => {
   } catch (error) {
     console.error('Error retrieving result:', error);
     res.status(500).json({ error: error.message });
+  }
+});
+
+router.get('/course/:courseId/student/:studentId', async (req, res) => {
+  const { courseId, studentId } = req.params;
+
+  try {
+    const result = await getResultByCourseAndStudent(courseId, studentId);
+    res.status(200).json(result.rows);
+  } catch (err) {
+    console.error('Error fetching result:', err);
+    res.status(500).json({ error: err.message });
   }
 });
 

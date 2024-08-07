@@ -290,4 +290,21 @@ router.get('/marks/assessment/:assessmentId', async (req, res) => {
   }
 });
 
+router.get('/assessments/:assessmentId/details', async (req, res) => {
+  const { assessmentId } = req.params;
+
+  try {
+    const result = await db.query(`
+      SELECT q.question_text, q.marks AS total_marks, m.obtained_marks
+      FROM public.questions q
+      JOIN public.marks m ON q.id = m.question_id
+      WHERE m.assessment_id = $1
+    `, [assessmentId]);
+
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Error fetching assessment details:', error);
+    res.status(500).send('Internal Server Error');
+  }
+});
 module.exports = router;

@@ -130,4 +130,50 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
+router.get('/student/:studentId', async (req, res) => {
+  const { studentId } = req.params;
+
+  try {
+    const result = await query(`
+      SELECT
+        m.student_id,
+        a.id AS assessment_id,
+        a.assessment_name,
+        a.assessment_type,
+        a.course_id,
+        c.name AS course_name,   -- Updated to match the actual column name
+        m.total_marks,
+        m.obtained_marks,
+        q.id AS question_id
+      FROM public.marks m
+      JOIN public.assessments a ON m.assessment_id = a.id
+      JOIN public.questions q ON m.question_id = q.id
+      JOIN public.courses c ON a.course_id = c.id  -- Join with courses table
+      WHERE m.student_id = $1
+    `, [studentId]);
+
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Error fetching marks for student:', error);
+    res.status(500).send('Internal Server Error');
+  }
+});
+
+  // Endpoint to get marks by question ID
+  router.get('/question/:questionId', async (req, res) => {
+    const { questionId } = req.params;
+  
+    try {
+      const result = await pool.query(
+        `SELECT * FROM marks WHERE question_id = $1`,
+        [questionId]
+      );
+      
+      res.json(result.rows);
+    } catch (error) {
+      console.error('Error fetching marks:', error);
+      res.status(500).json({ error: 'Failed to fetch marks' });
+    }
+  });
+
 module.exports = router;

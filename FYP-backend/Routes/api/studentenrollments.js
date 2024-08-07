@@ -129,4 +129,29 @@ router.get("/student/:student_id/course/:course_id", async (req, res) => {
 });
 
 
+router.get('student/:id', async (req, res) => {
+  const studentId = req.params.studentId;
+
+  try {
+    const query = `
+      SELECT e.course_id, c.course_name
+      FROM enrollments e
+      JOIN courses c ON e.course_id = c.course_id
+      WHERE e.student_id = $1
+    `;
+    const values = [studentId];
+
+    const result = await query(query, values);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: 'No enrollments found for this student.' });
+    }
+
+    res.status(200).json(result.rows);
+  } catch (error) {
+    console.error('Error fetching student enrollments:', error);
+    res.status(500).json({ message: 'Internal server error.' });
+  }
+});
+
 module.exports = router;

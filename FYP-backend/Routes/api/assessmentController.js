@@ -81,7 +81,7 @@ router.get('/checkCLOs/:courseId', async (req, res) => {
     const missingCLOs = allCLOs.filter(clo => !cloCounts.some(count => count.clo_id === clo.id));
 
     if (missingCLOs.length > 0) {
-      return res.status(400).json({ message: 'Not all CLOs have assessments', missingCLOs });
+      return res.status(200).json({ message: 'Not all CLOs have assessments', missingCLOs });
     }
 
     res.status(200).json({ message: 'All CLOs have assessments' });

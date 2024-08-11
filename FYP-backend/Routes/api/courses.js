@@ -188,14 +188,16 @@ router.get("/program/:programId/session/:sessionId", async (req, res) => {
     const result = await query(`
       SELECT c.*, s.id AS semester_id, s.name AS semester_name, s.number AS semester_number
       FROM courses c
-      JOIN semesters s ON c.program_id = $1 AND s.session_id = $2
-      WHERE c.program_id = $1
+      JOIN semesters s ON c.semester_id = s.id
+      WHERE c.program_id = $1 AND s.session_id = $2
     `, [programId, sessionId]);
     res.status(200).json(result.rows);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
+
+
 
 router.get("/program/:programId/semester/:semesterId", async (req, res) => {
   try {

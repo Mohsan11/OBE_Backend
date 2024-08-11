@@ -124,6 +124,5 @@ router.delete("/questions/:id", async (req, res) => {
     }
   })
 
-
   
 module.exports = router;

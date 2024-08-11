@@ -44,6 +44,30 @@ async function getEnrollmentsByCourse(course_id) {
   return query(queryText, [course_id]);
 }
 
+async function getAllEnrollments() {
+  const queryText = `
+    SELECT se.id, s.student_name, s.roll_number, c.name AS course_name, sem.name AS semester_name
+    FROM studentenrollments se
+    JOIN students s ON se.student_id = s.student_id
+    JOIN courses c ON se.course_id = c.id
+    JOIN semesters sem ON se.semester_id = sem.id;
+  `;
+  return query(queryText, []);
+}
+
+async function updateEnrollment(enrollmentId, updates) {
+  const { student_id, course_id, semester_id } = updates;
+  const queryText = `
+    UPDATE studentenrollments 
+    SET student_id = $1, course_id = $2, semester_id = $3
+    WHERE id = $4
+    RETURNING *;
+  `;
+  const values = [student_id, course_id, semester_id, enrollmentId];
+  return query(queryText, values);
+}
+
+
 // Express route handlers
 router.post("/", async (req, res) => {
   try {
@@ -74,6 +98,28 @@ router.delete("/:id", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
+router.get("/all", async (req, res) => {
+  try {
+    const result = await getAllEnrollments();
+    res.status(200).json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.put("/:id", async (req, res) => {
+  try {
+    const result = await updateEnrollment(req.params.id, req.body);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "Enrollment not found" });
+    }
+    res.status(200).json(result.rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 
 router.get("/student/:student_id", async (req, res) => {
   try {
@@ -122,11 +168,12 @@ router.get("/student/:student_id/course/:course_id", async (req, res) => {
       "SELECT * FROM studentenrollments WHERE student_id = $1 AND course_id = $2",
       [student_id, course_id]
     );
-    res.status(200).json(result.rows);
+    res.status(200).json(result.rows); // Respond with the rows, even if empty
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
+
 
 
 router.get('student/:id', async (req, res) => {

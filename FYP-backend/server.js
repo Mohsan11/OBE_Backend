@@ -23,6 +23,7 @@ app.use("/api/questions", require("./Routes/api/questions"));
 app.use("/api/assessments", require("./Routes/api/assesment")); 
 app.use("/api/marks", require("./Routes/api/marks"));
 app.use("/api/results", require("./Routes/api/result"));
+app.use("/api/studentresults", require("./Routes/api/finalResults"));
 app.use("/api/viewsos", require("./Routes/api/combinedQueries/viewSOS"));
 app.use("/api/programs_sessions", require("./Routes/api/combinedQueries/program_session"));
 app.use("/api/programs_sessions_semester", require("./Routes/api/combinedQueries/program_session_Semester"));

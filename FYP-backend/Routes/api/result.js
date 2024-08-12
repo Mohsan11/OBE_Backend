@@ -22,7 +22,7 @@ const createResult = async (req, res) => {
   try {
     const insertQuery = `INSERT INTO public.result (final_total_marks, final_obtained_marks, assessment_id, student_id, assessment_name, assessment_type)
       VALUES ($1, $2, $3 , $4, $5, $6)`;
-    await pool.query(insertQuery, [final_total_marks, final_obtained_marks, assessment_id, student_id, assessment_name, assessment_type ]);
+    await pool.query(insertQuery, [parseFloat(final_total_marks).toFixed(1), parseFloat(final_obtained_marks).toFixed(1), assessment_id, student_id, assessment_name, assessment_type ]);
     res.status(201).json({ message: 'Result created successfully' });
   } catch (error) {
     console.error('Error inserting result:', error);
@@ -58,7 +58,7 @@ async function updateResult(id, resultData) {
     SET final_total_marks = $1, final_obtained_marks = $2
     WHERE id = $3
     RETURNING *`;
-  const values = [final_total_marks, final_obtained_marks, id];
+  const values = [final_total_marks, parseFloat(final_obtained_marks).toFixed(1), id];
   const result = await query(queryText, values);
   return result.rows[0];
 }

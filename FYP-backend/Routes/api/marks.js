@@ -27,7 +27,7 @@ async function createMark(mark) {
     VALUES ($1, $2, $3, $4, $5)
     RETURNING *
   `;
-  const values = [student_id, question_id, assessment_id, total_marks, obtained_marks];
+  const values = [student_id, question_id, assessment_id, parseFloat(total_marks).toFixed(1), parseFloat(obtained_marks).toFixed(1)];
   const result = await query(queryText, values);
   return result.rows[0];
 }

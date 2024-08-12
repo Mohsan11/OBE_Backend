@@ -138,4 +138,21 @@ router.post("/login", async (req, res) => {
   }
 });
 
+
+// Fetch students based on program_id and session_id
+router.get('/:programId/:sessionId', async (req, res) => {
+  const { programId, sessionId } = req.params;
+
+  try {
+    const students = await query(
+      'SELECT * FROM students WHERE program_id = $1 AND session_id = $2',
+      [programId, sessionId]
+    );
+    res.json(students.rows);
+  } catch (error) {
+    console.error('Error fetching students:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 module.exports = router;

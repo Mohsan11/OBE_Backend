@@ -201,4 +201,22 @@ router.get('student/:id', async (req, res) => {
   }
 });
 
+router.get('/students', async (req, res) => {
+  const { course_id, semester_id } = req.query;
+
+  try {
+      const query = `
+          SELECT s.id, s.student_name
+          FROM students s
+          INNER JOIN studentenrollments se ON s.id = se.student_id
+          WHERE se.course_id = $1 AND se.semester_id = $2
+      `;
+      const result = await pool.query(query, [course_id, semester_id]);
+      res.json(result.rows);
+  } catch (error) {
+      console.error('Error fetching students:', error);
+      res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
 module.exports = router;

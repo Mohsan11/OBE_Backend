@@ -13,10 +13,38 @@ async function query(text, params) {
 // CRUD functions for teachercourseassignments table
 async function createTeacherCourseAssignment(assignment) {
   const { teacher_id, course_id, semester_id } = assignment;
-  const queryText = 'INSERT INTO teachercourseassignments (teacher_id, course_id, semester_id) VALUES ($1, $2, $3) RETURNING *';
-  const values = [teacher_id, course_id, semester_id];
-  return query(queryText, values);
+
+  try {
+    // Check if the course is already assigned to any teacher in this semester
+    const checkQuery = 'SELECT * FROM teachercourseassignments WHERE course_id = $1 AND semester_id = $2';
+    const checkValues = [course_id, semester_id];
+    const checkResult = await query(checkQuery, checkValues);
+
+    if (checkResult.rows.length > 0) {
+      const existingAssignment = checkResult.rows[0];
+      if (existingAssignment.teacher_id === teacher_id) {
+        // If the course is already assigned to the same teacher
+        return { error: 'This course is already assigned to the selected teacher in this semester' };
+      } else {
+        // If the course is assigned to another teacher
+        return { error: 'This course is already assigned to another teacher in this semester' };
+      }
+    } else {
+      // If not, insert the new assignment
+      const insertQuery = 'INSERT INTO teachercourseassignments (teacher_id, course_id, semester_id) VALUES ($1, $2, $3) RETURNING *';
+      const insertValues = [teacher_id, course_id, semester_id];
+      const insertResult = await query(insertQuery, insertValues);
+
+      // Return the newly created assignment
+      return insertResult.rows[0];
+    }
+  } catch (error) {
+    // Handle any errors during the process
+    console.error('Error creating teacher-course assignment:', error);
+    throw new Error('Error creating teacher-course assignment');
+  }
 }
+
 
 async function getTeacherCourseAssignment(id) {
   const queryText = 'SELECT * FROM teachercourseassignments WHERE id = $1';
@@ -93,7 +121,11 @@ router.get('/all', async (req, res) => {
 router.post("/", async (req, res) => {
   try {
     const result = await createTeacherCourseAssignment(req.body);
-    res.status(201).json(result.rows[0]);
+    if (result.error) {
+      res.status(400).json(result); // Return a 400 status for the error
+    } else {
+      res.status(201).json(result); // Return the newly created assignment
+    }
   } catch (err) {
     console.error("Error creating assignment:", err);
     res.status(500).json({ error: err.message });

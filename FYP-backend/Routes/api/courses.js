@@ -17,6 +17,7 @@ async function getAllCourses() {
 
 async function createCourse(course) {
   const { name, code, program_id, semester_id, theory_credit_hours, lab_credit_hours } = course;
+  console.log(theory_credit_hours, lab_credit_hours)
   const queryText = `
     INSERT INTO courses (name, code, program_id, semester_id, theory_credit_hours, lab_credit_hours)
     VALUES ($1, $2, $3, $4, $5, $6)

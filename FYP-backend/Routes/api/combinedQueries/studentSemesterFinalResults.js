@@ -123,6 +123,7 @@ router.get('/final/:studentId/semester/:semesterId', async (req, res) => {
 
       if (!expectedAssessments) {
         results.push({
+          course_id,
           course_name,
           message: 'No expected assessment structure found for this course credit hour configuration.',
         });
@@ -143,6 +144,7 @@ router.get('/final/:studentId/semester/:semesterId', async (req, res) => {
       });
 
       const courseResults = {
+        course_id,
         course_name,
         assessments: [],
         total_marks: 0,

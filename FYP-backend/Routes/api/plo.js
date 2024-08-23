@@ -13,10 +13,20 @@ async function query(text, params) {
 // CRUD functions for plos table
 async function createPLO(plo) {
   const { description, program_id, session_id, plo_name } = plo;
+
+  // Check if a PLO with the same name, program, and session exists
+  const existingPLOQuery = 'SELECT * FROM plos WHERE plo_name = $1 AND program_id = $2 AND session_id = $3';
+  const existingPLO = await query(existingPLOQuery, [plo_name, program_id, session_id]);
+
+  if (existingPLO.rows.length > 0) {
+    throw new Error('PLO with the same name already exists for this program and session.');
+  }
+
   const queryText = 'INSERT INTO plos (description, program_id, session_id, plo_name) VALUES ($1, $2, $3, $4) RETURNING *';
   const values = [description, program_id, session_id, plo_name];
   return query(queryText, values);
 }
+
 
 async function getPLO(ploId) {
   const queryText = 'SELECT * FROM plos WHERE id = $1';

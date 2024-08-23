@@ -36,6 +36,7 @@ app.use("/api/assesmentsController", require("./Routes/api/assessmentController"
 
 app.use("/api/resultsDetails", require("./Routes/api/combinedQueries/studentSemesterFinalResults"));
 app.use("/api/final_results_semesters", require("./Routes/api/finalResults"));
+app.use("/api/add_final_results", require("./Routes/api/final_results_semesters"));
 
 app.listen(PORT, () => {
   console.log("Server is running on Port:", PORT);

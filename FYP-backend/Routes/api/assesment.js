@@ -307,4 +307,64 @@ router.get('/assessments/:assessmentId/details', async (req, res) => {
     res.status(500).send('Internal Server Error');
   }
 });
+
+// -----------------Combined queries
+async function deleteAssessment(assessmentId) {
+  // Fetch the assessment to be deleted
+  const assessmentResult = await query('SELECT * FROM assessments WHERE id = $1', [assessmentId]);
+  if (assessmentResult.rows.length === 0) {
+    throw new Error('Assessment not found');
+  }
+  const assessment = assessmentResult.rows[0];
+
+  // Fetch the course details to get credit hours
+  const courseResult = await query('SELECT * FROM courses WHERE id = $1', [assessment.course_id]);
+  if (courseResult.rows.length === 0) {
+    throw new Error('Course not found');
+  }
+  const course = courseResult.rows[0];
+  const theoryCreditHours = course.theory_credit_hours;
+  const labCreditHours = course.lab_credit_hours;
+
+  // Fetch remaining assessments of the same type for the course (excluding the one to be deleted)
+  const remainingAssessmentsResult = await query(
+    'SELECT * FROM assessments WHERE course_id = $1 AND assessment_type = $2 AND id != $3',
+    [assessment.course_id, assessment.assessment_type, assessmentId]
+  );
+  const numberOfRemainingAssessments = remainingAssessmentsResult.rows.length;
+
+  // Calculate the normalized marks for the remaining assessments
+  const { normalizedMarks, totalMarks } = calculateNormalizedMarks(theoryCreditHours, labCreditHours, assessment.assessment_type);
+
+  if (numberOfRemainingAssessments > 0) {
+    const adjustedNormalizedMarks = normalizedMarks / numberOfRemainingAssessments;
+
+    await Promise.all(
+      remainingAssessmentsResult.rows.map(async (remainingAssessment) => {
+        await query('UPDATE assessments SET normalized_total_marks = $1 WHERE id = $2', [adjustedNormalizedMarks, remainingAssessment.id]);
+        await updateMarksAndResults(remainingAssessment.id, adjustedNormalizedMarks);
+      })
+    );
+  }
+
+  // Delete related marks, questions, and results
+  await query('DELETE FROM marks WHERE assessment_id = $1', [assessmentId]);
+  await query('DELETE FROM questions WHERE assessment_id = $1', [assessmentId]);
+  await query('DELETE FROM result WHERE assessment_id = $1', [assessmentId]);
+
+  // Delete the assessment
+  const deleteQueryText = 'DELETE FROM assessments WHERE id = $1';
+  return query(deleteQueryText, [assessmentId]);
+}
+
+router.delete("/deleteassessment/:id", async (req, res) => {
+  try {
+    await deleteAssessment(req.params.id);
+    res.status(204).end();
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
 module.exports = router;

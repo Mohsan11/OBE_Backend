@@ -63,6 +63,8 @@ async function updateResult(id, resultData) {
   return result.rows[0];
 }
 
+
+
 // Delete a result record
 async function deleteResult(id) {
   const queryText = 'DELETE FROM result WHERE id = $1 RETURNING *';
@@ -150,6 +152,7 @@ router.put('/:id', async (req, res) => {
   }
 });
 
+
 // API route to delete a result
 router.delete('/:id', async (req, res) => {
   try {
@@ -162,5 +165,73 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
+
+router.get('/:assessment_id', async (req, res) => {
+  const { assessment_id } = req.params;
+  
+  try {
+      const result = await query(
+          'SELECT * FROM public.result WHERE assessment_id = $1', 
+          [assessment_id]
+      );
+      
+      if (result.rows.length === 0) {
+          return res.status(404).json({ message: 'No results found for the given assessment ID' });
+      }
+
+      // If results are found, return them
+      res.status(200).json(result.rows);
+  } catch (err) {
+      console.error(err.message);
+      res.status(500).json({ message: 'Server Error' });
+  }
+});
+
+router.put('/update/:assessment_id/:student_id', async (req, res) => {
+  try {
+    // Get the assessment_id and student_id from the request parameters
+    const assessment_id = parseInt(req.params.assessment_id);
+    const student_id = parseInt(req.params.student_id);
+
+    // Validate the assessment_id and student_id
+    if (isNaN(assessment_id) || assessment_id <= 0) {
+      return res.status(400).json({ message: 'Invalid assessment ID.' });
+    }
+    if (isNaN(student_id) || student_id <= 0) {
+      return res.status(400).json({ message: 'Invalid student ID.' });
+    }
+
+    // Get the final_obtained_marks from the request body
+    const { final_obtained_marks } = req.body;
+
+    // Validate the final_obtained_marks
+    if (typeof final_obtained_marks !== 'number' || isNaN(final_obtained_marks)) {
+      return res.status(400).json({ message: 'Invalid final_obtained_marks value. It must be a number.' });
+    }
+
+    // Update query
+    const queryText = `
+      UPDATE public.result
+      SET final_obtained_marks = $1
+      WHERE assessment_id = $2 AND student_id = $3
+      RETURNING *;
+    `;
+    
+    // Execute the query with the provided values
+    const values = [final_obtained_marks, assessment_id, student_id];
+    const result = await query(queryText, values);
+
+    // If no rows were updated, return an error
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: 'No result found for the given assessment ID and student ID.' });
+    }
+
+    // Return the updated result
+    res.status(200).json(result.rows[0]);
+  } catch (error) {
+    console.error('Error updating result:', error);
+    res.status(500).json({ error: 'Internal server error.' });
+  }
+});
 
 module.exports = router;

@@ -60,6 +60,7 @@ async function updateMark(id, mark) {
   return result.rows[0];
 }
 
+
 // Delete a mark record
 async function deleteMark(id) {
   const queryText = 'DELETE FROM marks WHERE id = $1 RETURNING *';
@@ -175,5 +176,40 @@ router.get('/student/:studentId', async (req, res) => {
       res.status(500).json({ error: 'Failed to fetch marks' });
     }
   });
+
+  async function updateMarkByQuestionId(questionId, obtainedMarks) {
+    const queryText = `
+      UPDATE public.marks
+      SET obtained_marks = $1
+      WHERE question_id = $2
+      RETURNING *
+    `;
+    const values = [obtainedMarks, questionId];
+    const result = await query(queryText, values);
+  
+    if (result.rows.length === 0) {
+      throw new Error('Mark not found for the given question_id');
+    }
+  
+    return result.rows[0];
+  }
+  router.put('/update/:question_id', async (req, res) => {
+    const { question_id } = req.params;
+    const { obtained_marks } = req.body;
+  
+    // Validate obtained_marks
+    if (typeof obtained_marks !== 'number' || isNaN(obtained_marks)) {
+      return res.status(400).json({ error: 'Invalid obtained_marks value.' });
+    }
+  
+    try {
+      const updatedMark = await updateMarkByQuestionId(question_id, obtained_marks);
+      res.status(200).json(updatedMark);
+    } catch (error) {
+      console.error('Error updating mark:', error.message);
+      res.status(500).json({ error: 'Failed to update the mark.' });
+    }
+  });
+  
 
 module.exports = router;

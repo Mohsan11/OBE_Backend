@@ -38,6 +38,8 @@ app.use("/api/resultsDetails", require("./Routes/api/combinedQueries/studentSeme
 app.use("/api/final_results_semesters", require("./Routes/api/finalResults"));
 app.use("/api/add_final_results", require("./Routes/api/final_results_semesters"));
 
+app.use("/api/cloplo/", require("./Routes/api/combinedQueries/resultFinilazing/CLO_PLO_progress"))
+app.use("/api/track/", require("./Routes/api/combinedQueries/resultFinilazing/clo_plo_tracking"))
 app.listen(PORT, () => {
   console.log("Server is running on Port:", PORT);
 });
